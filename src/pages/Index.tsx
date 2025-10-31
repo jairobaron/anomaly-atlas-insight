@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { DynagramChart } from '@/components/DynagramChart';
 import { AnomalyMap } from '@/components/AnomalyMap';
 import { AnomalyList } from '@/components/AnomalyList';
@@ -11,6 +11,7 @@ const Index = () => {
   const [highlightedAnomaly, setHighlightedAnomaly] = useState<string | null>(null);
 
   const currentData = generateDynagramData(0);
+  const positions = currentData.map((d) => d.position);
 
   const toggleAnomaly = (id: string) => {
     const newVisible = new Set(visibleAnomalies);
@@ -29,6 +30,30 @@ const Index = () => {
     isVisible: visibleAnomalies.has(anomaly.id),
   }));
 
+  // Prepare series data for the combined chart
+  const chartSeries = useMemo(() => {
+    const series = [
+      {
+        id: 'current',
+        name: 'Actual',
+        color: 'hsl(var(--chart-current))',
+        data: currentData.map((d) => d.load),
+        isVisible: true, // Always visible
+      },
+      ...closestAnomalies.map((anomaly, index) => {
+        const data = generateDynagramData(index + 1);
+        return {
+          id: anomaly.id,
+          name: anomaly.type,
+          color: anomaly.color,
+          data: data.map((d) => d.load),
+          isVisible: visibleAnomalies.has(anomaly.id),
+        };
+      }),
+    ];
+    return series;
+  }, [visibleAnomalies, currentData]);
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-[1280px] mx-auto">
@@ -37,29 +62,13 @@ const Index = () => {
             Panel de Análisis de Dinagramas
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Transición de dinagrama a golpe de fluido normalizado
+            Comparación de dinagramas normalizados
           </p>
         </header>
 
         <div className="grid grid-cols-2 gap-6 mb-6" style={{ height: '450px' }}>
-          {/* Left: Dynagrams */}
-          <div className="space-y-3 overflow-y-auto">
-            <DynagramChart
-              data={currentData}
-              color="hsl(var(--chart-current))"
-              title="Dinagrama Actual"
-              isVisible={true}
-            />
-            {closestAnomalies.map((anomaly, index) => (
-              <DynagramChart
-                key={anomaly.id}
-                data={generateDynagramData(index + 1)}
-                color={anomaly.color}
-                title={anomaly.type}
-                isVisible={visibleAnomalies.has(anomaly.id)}
-              />
-            ))}
-          </div>
+          {/* Left: Combined Dynagram Chart */}
+          <DynagramChart series={chartSeries} positions={positions} />
 
           {/* Right: Anomaly Map */}
           <AnomalyMap
