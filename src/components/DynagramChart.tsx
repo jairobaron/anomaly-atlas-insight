@@ -38,18 +38,18 @@ export const DynagramChart = ({ series, positions }: DynagramChartProps) => {
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--chart-grid))" opacity={0.3} />
           <XAxis 
             dataKey="position" 
-            domain={[0, 100]}
-            ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]}
+            domain={[0, 1]}
+            ticks={[0, 0.2, 0.4, 0.6, 0.8, 1.0]}
             tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
             stroke="hsl(var(--border))"
-            label={{ value: 'Posición', position: 'insideBottom', offset: -5, fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+            label={{ value: 'Posición normalizada', position: 'insideBottom', offset: -5, fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
           />
           <YAxis 
-            domain={[-0.5, 3]}
-            ticks={[-0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3]}
+            domain={[0, 1]}
+            ticks={[0, 0.2, 0.4, 0.6, 0.8, 1.0]}
             tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
             stroke="hsl(var(--border))"
-            label={{ value: 'Carga', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+            label={{ value: 'Carga normalizada', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
           />
           <Tooltip 
             contentStyle={{ 

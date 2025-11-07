@@ -1,4 +1,4 @@
-// Real current dynagram data (raw values, not normalized)
+// Real current dynagram data (raw values)
 const realCurrentData = [
   { position: 0, load: 0.295894 }, { position: 0.046836, load: 0.391887 }, { position: 0.28227, load: 0.405442 },
   { position: 0.588655, load: 0.598934 }, { position: 0.993968, load: 0.663023 }, { position: 1.421863, load: 0.992139 },
@@ -49,41 +49,48 @@ const realCurrentData = [
   { position: 0.965416, load: 0.073819 }, { position: 0.511445, load: 0.076522 }, { position: 0.189752, load: 0.110172 }
 ];
 
-// Generate dynagram data
+// Normalize data to 0-1 range
+const normalizeData = (data: typeof realCurrentData) => {
+  const maxPosition = Math.max(...data.map(d => d.position));
+  const minPosition = Math.min(...data.map(d => d.position));
+  const maxLoad = Math.max(...data.map(d => d.load));
+  const minLoad = Math.min(...data.map(d => d.load));
+  
+  return data.map(d => ({
+    position: (d.position - minPosition) / (maxPosition - minPosition),
+    load: (d.load - minLoad) / (maxLoad - minLoad)
+  }));
+};
+
+const normalizedCurrentData = normalizeData(realCurrentData);
+
+// Generate normalized dynagram data
 export const generateDynagramData = (seed: number) => {
   if (seed === 0) {
-    // Return real current data (raw values)
-    return realCurrentData;
+    // Return real current data (normalized)
+    return normalizedCurrentData;
   }
   
-  // Generate synthetic anomaly patterns with similar scale
+  // Generate synthetic anomaly patterns
   const data = [];
   for (let i = 0; i <= 100; i++) {
-    const position = i;
+    const position = i / 100;
     let load = 0;
     
     if (seed === 1) {
-      // Leak_Up anomaly - similar pattern but different
-      load = 2.5 + 0.2 * Math.sin(position * 0.1) + 0.1 * Math.cos(position * 0.3);
-      if (position < 10) load = position * 0.25;
-      if (position > 60) load = 2.7 - (position - 60) * 0.005;
+      // Leak_Up anomaly
+      load = 1 / (1 + Math.exp(-10 * (position - 0.7))) - 0.1 * Math.sin(position * 10);
     } else if (seed === 2) {
       // Leak_dw anomaly
-      load = 2.6 - 0.15 * Math.sin(position * 0.15);
-      if (position < 8) load = position * 0.3;
-      if (position > 70) load = 2.5 + (position - 70) * 0.01;
+      load = 1 / (1 + Math.exp(-8 * (position - 0.4))) + 0.05 * Math.cos(position * 8);
     } else if (seed === 3) {
       // Separation anomaly
-      if (position < 50) {
-        load = 0.1 + 0.05 * Math.sin(position * 0.2);
-      } else {
-        load = 0.1 + (position - 50) * 0.05;
-      }
+      load = position < 0.3 ? 0.05 : (1 / (1 + Math.exp(-15 * (position - 0.6))));
     }
     
     data.push({
       position: parseFloat(position.toFixed(3)),
-      load: parseFloat(load.toFixed(3))
+      load: parseFloat(Math.max(0, Math.min(1, load)).toFixed(3))
     });
   }
   return data;
