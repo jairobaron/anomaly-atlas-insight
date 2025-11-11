@@ -1,7 +1,10 @@
 import { useState, useMemo } from 'react';
 import { DynagramChart } from '@/components/DynagramChart';
-import { AnomalyMap } from '@/components/AnomalyMap';
+import { AnomalyMap, AnomalyPoint } from '@/components/AnomalyMap';
 import { AnomalyList } from '@/components/AnomalyList';
+import { realCurrentData } from '@/data/mockRealCurrentData';
+import { mockAchoredTubingDfl } from '@/data/mockAchoredTubingDfl';
+import { mockActionErraticTv } from '@/data/mockActionErraticTv';
 import { generateDynagramData, anomalyTypes, currentPoint, closestAnomalies } from '@/data/mockData';
 
 const Index = () => {
@@ -9,6 +12,7 @@ const Index = () => {
     new Set(['A7', 'A8', 'A3']) // Show closest 3 by default
   );
   const [highlightedAnomaly, setHighlightedAnomaly] = useState<string | null>(null);
+  const [selectedAnomalyType, setSelectedAnomalyType] = useState<string | null>(null);
 
   const currentData = generateDynagramData(0);
   const positions = currentData.map((d) => d.position);
@@ -23,6 +27,10 @@ const Index = () => {
       setHighlightedAnomaly(id);
     }
     setVisibleAnomalies(newVisible);
+  };
+
+  const handleAnomalyClick = (anomaly: AnomalyPoint) => {
+    setSelectedAnomalyType(anomaly.type);
   };
 
   const anomalyListData = closestAnomalies.map((anomaly) => ({
@@ -66,6 +74,11 @@ const Index = () => {
           </p>
         </header>
 
+        {/* Muestra el tipo de la anomalía seleccionada */}
+        {selectedAnomalyType && (
+          <p>Anomalía seleccionada: <strong>{selectedAnomalyType}</strong></p>
+        )}
+
         <div className="grid grid-cols-2 gap-6 mb-6" style={{ height: '450px' }}>
           {/* Left: Combined Dynagram Chart */}
           <DynagramChart series={chartSeries} positions={positions} />
@@ -75,6 +88,7 @@ const Index = () => {
             anomalies={anomalyTypes}
             currentPoint={currentPoint}
             highlightedId={highlightedAnomaly}
+            onAnomalyClick={handleAnomalyClick}
           />
         </div>
 

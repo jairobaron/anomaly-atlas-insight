@@ -1,7 +1,7 @@
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceDot } from 'recharts';
 import { Card } from '@/components/ui/card';
 
-interface AnomalyPoint {
+export interface AnomalyPoint {
   id: string;
   x: number;
   y: number;
@@ -13,9 +13,10 @@ interface AnomalyMapProps {
   anomalies: AnomalyPoint[];
   currentPoint: { x: number; y: number };
   highlightedId: string | null;
+  onAnomalyClick?: (anomaly: AnomalyPoint) => void;
 }
 
-export const AnomalyMap = ({ anomalies, currentPoint, highlightedId }: AnomalyMapProps) => {
+export const AnomalyMap = ({ anomalies, currentPoint, highlightedId, onAnomalyClick }: AnomalyMapProps) => {
   return (
     <Card className="p-4 bg-card border-border h-full">
       <h3 className="text-sm font-medium text-muted-foreground mb-3">Atlas de Anomalías</h3>
@@ -47,9 +48,9 @@ export const AnomalyMap = ({ anomalies, currentPoint, highlightedId }: AnomalyMa
           />
           {/* Reference circle for radius */}
           <ReferenceDot 
-            x={1.1} 
-            y={1.0} 
-            r={80} 
+            x={-1.53} 
+            y={-0.13} 
+            r={35} 
             fill="none" 
             stroke="hsl(var(--primary))" 
             strokeDasharray="5 5"
@@ -67,7 +68,7 @@ export const AnomalyMap = ({ anomalies, currentPoint, highlightedId }: AnomalyMa
             <Cell fill="hsl(var(--foreground))" />
           </Scatter>
           {/* Anomaly points */}
-          <Scatter name="Anomalías" data={anomalies}>
+          <Scatter name="Anomalías" data={anomalies} onClick={onAnomalyClick}>
             {anomalies.map((entry, index) => (
               <Cell 
                 key={`cell-${index}`} 

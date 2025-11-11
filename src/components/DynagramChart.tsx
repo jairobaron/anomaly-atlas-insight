@@ -17,39 +17,50 @@ interface DynagramChartProps {
 export const DynagramChart = ({ series, positions }: DynagramChartProps) => {
   // Combine all series data into a single dataset
   const chartData = positions.map((position, index) => {
-    const dataPoint: any = { position };
-    series.forEach((s) => {
-      if (s.isVisible) {
-        dataPoint[s.id] = s.data[index];
-      }
-    });
-    return dataPoint;
+  const dataPoint: Record<string, number> = { position }; // <-- Punto 1
+  series.forEach((s) => {
+    if (s.isVisible) {
+      dataPoint[s.id] = s.data[index]; // <-- Punto 2
+    }
   });
+  return dataPoint;
+});
+
+const primerPuntoDeDatos = chartData[0];
+  if (primerPuntoDeDatos) {
+    // 💡 Asegurar que el punto final tenga el último índice + 1
+    const lastIndex = chartData.length;
+    chartData.push({ 
+        ...primerPuntoDeDatos, 
+        index: lastIndex // <-- CLAVE: Asignar un índice secuencial único
+  }); 
+}
 
   const visibleSeries = series.filter((s) => s.isVisible);
 
   return (
     <Card className="p-4 bg-card border-border h-full">
       <h3 className="text-sm font-medium text-muted-foreground mb-3">
-        Transición de Dinagrama a Golpe de Fluido Normalizado
+        Diagnóstico Dinagrama de Fondo
       </h3>
       <ResponsiveContainer width="100%" height="90%">
         <LineChart data={chartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--chart-grid))" opacity={0.3} />
-          <XAxis 
-            dataKey="position" 
-            domain={[0, 1]}
-            ticks={[0, 0.2, 0.4, 0.6, 0.8, 1.0]}
+          <XAxis
+            dataKey="position"
+            type="number"
+            domain={['dataMin', 'dataMax']}
+            ticks={[0, 0.25, 0.50, 0.75, 1]}
             tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
             stroke="hsl(var(--border))"
-            label={{ value: 'Posición normalizada', position: 'insideBottom', offset: -5, fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+            label={{ value: 'Posición', position: 'insideBottom', offset: -5, fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
           />
-          <YAxis 
-            domain={[0, 1]}
-            ticks={[0, 0.2, 0.4, 0.6, 0.8, 1.0]}
+          <YAxis
+            domain={['dataMin', 'dataMax']}
+            ticks={[0, 0.25, 0.50, 0.75, 1]}
             tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
             stroke="hsl(var(--border))"
-            label={{ value: 'Carga normalizada', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+            label={{ value: 'Carga', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
           />
           <Tooltip 
             contentStyle={{ 
@@ -66,7 +77,7 @@ export const DynagramChart = ({ series, positions }: DynagramChartProps) => {
           {visibleSeries.map((s) => (
             <Line
               key={s.id}
-              type="monotone"
+              type="linear"
               dataKey={s.id}
               name={s.name}
               stroke={s.color}
