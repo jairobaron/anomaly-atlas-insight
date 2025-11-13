@@ -38,7 +38,7 @@ export const generateDynagramData = (seed: number) => {
 
 export const anomalyTypes = [
   // Distancia corregida al punto (-1.53, -0.13)
-  { id: 'A1', type: 'C1: Action Erratic TV', color: 'hsl(var(--chart-1))', x: -1.58, y: 0.81, distance: 0.94 },
+  { id: 'A1', type: 'C1: Action Erratic TV', color: 'hsl(var(--chart-1))', x: -1.58, y: -1.79, distance: 0.94 },  
   { id: 'A2', type: 'C2: Anchored Tubing DFL', color: 'hsl(var(--chart-2))', x: -1.57, y: 0.37, distance: 0.50 },
   { id: 'A3', type: 'C3: Asphaltenes', color: 'hsl(var(--chart-3))', x: -4.95, y: -1.13, distance: 3.56 }, // Corregido (antes 3.65)
   { id: 'A4', type: 'C4: Average Well', color: 'hsl(var(--chart-4))', x: -1.53, y: -0.13, distance: 0.00 },
