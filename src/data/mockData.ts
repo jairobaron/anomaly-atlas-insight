@@ -1,5 +1,6 @@
 import { mockAchoredTubingDfl } from './mockAchoredTubingDfl';
 import { mockActionErraticTv } from './mockActionErraticTv';
+import { mockTrashStickSv } from './mockTrashStickSv';
 import { realCurrentData } from './mockRealCurrentData';
 
 // Normalize data to 0-1 range
@@ -18,6 +19,7 @@ const normalizeData = (data: typeof realCurrentData) => {
 const normalizedCurrentData = normalizeData(realCurrentData);
 const normalizedAnchoredTubingDfl = normalizeData(mockAchoredTubingDfl);
 const normalizedActionErraticTv = normalizeData(mockActionErraticTv);
+const normalizedTrashStickSv = normalizeData(mockTrashStickSv);
 
 // Generate dynagram data in real scale
 export const generateDynagramData = (seed: number) => {
@@ -32,7 +34,7 @@ export const generateDynagramData = (seed: number) => {
     return normalizedAnchoredTubingDfl;
   }
   if (seed == 3) {
-    return normalizedActionErraticTv;
+    return normalizedTrashStickSv;
   }
 };
 
