@@ -71,13 +71,13 @@ export const anomalyTypes = [
 
 export const currentPoint = { x: -1.53, y: - 0.13 };
 
+/*
 export const closestAnomalies = [
   { id: 'A4', type: 'C4: Average Well', color: 'hsl(var(--chart-4))', x: -1.53, y: -0.13, distance: 0.61 },
   { id: 'A2', type: 'C2: Anchored Tubing DFL', color: 'hsl(var(--chart-2))', x: -1.57, y: 0.37, distance: 0.67 },
   { id: 'A1', type: 'C1: Action Erratic TV', color: 'hsl(var(--chart-1))', x: -1.58, y: 0.81, distance: 0.86 },
 ];
-{/*
+*/
 export const closestAnomalies = anomalyTypes
   .sort((a, b) => a.distance - b.distance)
   .slice(0, 3);
-*/}
