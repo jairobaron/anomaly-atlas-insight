@@ -3,23 +3,190 @@ import { mockActionErraticTv } from './mockActionErraticTv';
 import { mockTrashStickSv } from './mockTrashStickSv';
 import { realCurrentData } from './mockRealCurrentData';
 
-// Normalize data to 0-1 range
-const normalizeData = (data: typeof realCurrentData) => {
-  const maxPosition = Math.max(...data.map(d => d.position));
-  const minPosition = Math.min(...data.map(d => d.position));
-  const maxLoad = Math.max(...data.map(d => d.load));
-  const minLoad = Math.min(...data.map(d => d.load));
-  
-  return data.map(d => ({
-    position: (d.position - minPosition) / (maxPosition - minPosition),
-    load: (d.load - minLoad) / (maxLoad - minLoad)
-  }));
-};
+// 🚩 Nueva función de interpolación
+interface DynagramPoint {
+  position: number;
+  load: number;
+}
+type DynagramData = DynagramPoint[];
+
+/**
+ * Busca el segmento [p1, p2] que contiene la posición objetivo.
+ * Devuelve [p1, p2] o null.
+ */
+function findSegment(targetPosition: number, data: DynagramData): [DynagramPoint, DynagramPoint] | null {
+    for (let i = 0; i < data.length - 1; i++) {
+        const p1 = data[i];
+        const p2 = data[i + 1];
+
+        const x1 = p1.position;
+        const x2 = p2.position;
+
+        // Condición para manejar segmentos ascendentes (x1 < x2) y descendentes (x1 > x2)
+        // Se usa una pequeña tolerancia (epsilon) para manejar la igualdad de punto flotante.
+        const epsilon = 1e-9; 
+
+        if ((x1 - epsilon <= targetPosition && targetPosition <= x2 + epsilon) || 
+            (x1 + epsilon >= targetPosition && targetPosition >= x2 - epsilon)) 
+        {
+            return [p1, p2];
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Función de Interpolación Lineal Robusta.
+ * Interpola la carga (load) para una posición objetivo (targetPosition) usando los datos.
+ * @param targetPosition Posición X objetivo.
+ * @param data Puntos del dinagrama (DynagramData) ordenados secuencialmente.
+ * @returns El valor de carga interpolado.
+ */
+function interpolateLoadRobust(targetPosition: number, data: DynagramData): number {
+    if (data.length < 2) {
+        return data.length === 1 ? data[0].load : 0.0;
+    }
+    
+    const segment = findSegment(targetPosition, data);
+
+    if (segment) {
+        const [p1, p2] = segment;
+        const x1 = p1.position;
+        const y1 = p1.load;
+        const x2 = p2.position;
+        const y2 = p2.load;
+
+        if (x2 === x1) {
+            return y1;
+        }
+
+        // Fórmula de Interpolación Lineal: y = y1 + (x - x1) * ((y2 - y1) / (x2 - x1))
+        return y1 + (targetPosition - x1) * ((y2 - y1) / (x2 - x1));
+    }
+
+    // Manejo de extremos (Extrapolación simple: devuelve el valor del borde)
+    const positions = data.map(d => d.position);
+    const minX = Math.min(...positions);
+    const maxX = Math.max(...positions);
+
+    if (targetPosition < minX) {
+        return data[0].load;
+    }
+    if (targetPosition > maxX) {
+        return data[data.length - 1].load;
+    }
+
+    // Este caso no debería ocurrir si findSegment es correcto
+    return 0.0;
+}
+
+/**
+ * Normaliza los valores de 'position' y 'load' al rango [0, 1] (Min-Max Normalization).
+ */
+function normalizeData(data: DynagramData): DynagramData {
+    if (!data || data.length === 0) {
+        return [];
+    }
+
+    const positions = data.map(d => d.position);
+    const loads = data.map(d => d.load);
+
+    const minPosition = Math.min(...positions);
+    const maxPosition = Math.max(...positions);
+    const minLoad = Math.min(...loads);
+    const maxLoad = Math.max(...loads);
+
+    const posRange = maxPosition - minPosition;
+    const loadRange = maxLoad - minLoad;
+
+    const normalizedData: DynagramData = [];
+    
+    for (const d of data) {
+        const newPosition = posRange !== 0 
+            ? (d.position - minPosition) / posRange 
+            : 0.0;
+            
+        const newLoad = loadRange !== 0 
+            ? (d.load - minLoad) / loadRange 
+            : 0.0;
+
+        normalizedData.push({
+            position: newPosition,
+            load: newLoad
+        });
+    }
+    
+    return normalizedData;
+}
+
+/**
+ * Alinea el dinagrama de referencia (referenceData) a las posiciones base (basePositions)
+ * usando una estrategia de separación de ramas para interpolación.
+ * @param basePositions Array de posiciones X a las que se debe alinear.
+ * @param referenceData Dinagrama de referencia normalizado.
+ * @returns El dinagrama de referencia alineado (interpoldado).
+ */
+function alignDataSeparateBranches(basePositions: number[], referenceData: DynagramData): DynagramData {
+    if (!referenceData.length) return [];
+
+    // 1. Encontrar el punto de máxima posición (punto de inflexión)
+    let maxPosition = -Infinity;
+    for (const d of referenceData) {
+        if (d.position > maxPosition) {
+            maxPosition = d.position;
+        }
+    }
+
+    const idxMax = referenceData.findIndex(d => d.position === maxPosition);
+
+    if (idxMax === -1) {
+        // Fallback si no se encuentra el punto max, que no debería ocurrir
+        return []; 
+    }
+    
+    // 2. Separar las ramas de la curva de referencia
+    // Rama 1: Subida (incluye el punto máximo)
+    const branch1 = referenceData.slice(0, idxMax + 1);
+    // Rama 2: Bajada (incluye el punto máximo y el resto)
+    const branch2 = referenceData.slice(idxMax); 
+    
+    const alignedData: DynagramData = [];
+    const halfwayIndex = Math.floor(basePositions.length / 2);
+    
+    for (let i = 0; i < basePositions.length; i++) {
+        const position = basePositions[i];
+        let load: number;
+        
+        // Determinar en qué rama buscar basado en el índice de la posición base
+        if (i <= halfwayIndex) {
+            // Asume que la primera mitad de basePositions es el stroke de subida
+            load = interpolateLoadRobust(position, branch1);
+        } else {
+            // Asume que la segunda mitad de basePositions es el stroke de bajada
+            load = interpolateLoadRobust(position, branch2);
+        }
+            
+        alignedData.push({
+            position: position,
+            load: load
+        });
+    }
+    return alignedData;
+}
 
 const normalizedCurrentData = normalizeData(realCurrentData);
 const normalizedAnchoredTubingDfl = normalizeData(mockAchoredTubingDfl);
 const normalizedActionErraticTv = normalizeData(mockActionErraticTv);
 const normalizedTrashStickSv = normalizeData(mockTrashStickSv);
+
+// Obtenemos las posiciones del dinagrama actual normalizado (eje X base)
+const basePositions = normalizedCurrentData.map(d => d.position);
+
+// 🚩 EXPORTAR los dinagramas de referencia ALINEADOS
+export const alignedCurrentData = alignDataSeparateBranches(basePositions, normalizedCurrentData);
+export const alignedAnchoredTubingDfl = alignDataSeparateBranches(basePositions, normalizedAnchoredTubingDfl);
+export const alignedTrashStickSv = alignDataSeparateBranches(basePositions, normalizedTrashStickSv);
 
 // Generate dynagram data in real scale
 export const generateDynagramData = (seed: number) => {
@@ -31,10 +198,10 @@ export const generateDynagramData = (seed: number) => {
     return normalizedCurrentData;
   }
   if (seed == 2) {
-    return normalizedAnchoredTubingDfl;
+    return alignedAnchoredTubingDfl;
   }
   if (seed == 3) {
-    return normalizedTrashStickSv;
+    return alignedTrashStickSv;
   }
 };
 
